@@ -28,7 +28,7 @@ fastboot boot xnu-frankel.img  ->  ABL (Google's)  ->  shim (socs/lga/shim)  -> 
 ```
 
 The shim, why there is one instead of a UEFI, what PixOS did on the Pixel 6a and what QEMU checks are in the SoC
-repository's README: [Scion-Project/hakios-soc-lga](https://github.com/Scion-Project/hakios-soc-lga). This repository is the
+repository's README: [Scion-Project/scion-soc-lga](https://github.com/Scion-Project/scion-soc-lga). This repository is the
 phone's: its configuration, its facts, its image script.
 
 | File | What |
@@ -99,7 +99,7 @@ Each step on a phone whose data is expendable (above). Each says how you know it
    - **A blue band** at the top left: the shim runs at EL1 with the MMU on and found a framebuffer. **Green**: the payload
      is at 0xF0000000. **Yellow**: the loader starts. Below them the shim's console: its own lines (RAM, reservations,
      the DPU's layers), then the loader's banner, `platform frankel, GICv3`, `CurrentEL=1` (what QEMU shows:
-     [hakios-soc-lga's `shim/tests/qemu-screen.png`](https://github.com/Scion-Project/hakios-soc-lga/blob/main/shim/tests/qemu-screen.png)).
+     [scion-soc-lga's `shim/tests/qemu-screen.png`](https://github.com/Scion-Project/scion-soc-lga/blob/main/shim/tests/qemu-screen.png)).
      Photograph it.
    - Nothing drawn though the shim runs (UART): the framebuffer was not found or the panel needs a frame started (it is a
      command-mode panel). The UART shows each DPU layer read: give the right one with `-f BASE,1080,2424,STRIDE`.
