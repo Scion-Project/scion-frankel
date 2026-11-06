@@ -27,7 +27,7 @@ adb shell getprop ro.bootloader ; adb shell getprop ro.product.device     # writ
 adb reboot bootloader
 fastboot getvar product ; fastboot getvar max-download-size ; fastboot getvar unlocked
 fastboot flashing unlock                    # THE WIPE. Confirm on the phone (volume keys, power). It restarts into setup.
-adb reboot bootloader                       # (set up Android enough to reach Developer options? not needed: hold Power+Vol-down at start)
+# the phone starts Android's setup: power it off, then hold Power + Volume-down to reach fastboot again
 fastboot boot p10-probe-nokick.img          # 1. watch the bottom half of the screen and photograph it, 8 to 15 s in
 fastboot boot p10-probe.img                 # 2. the same
 fastboot boot xnu-frankel.img               # 3. photograph at about 10 s, 30 s, 60 s, 110 s
@@ -67,7 +67,7 @@ include them; unverified). Whether the RAM survives the restart is itself one of
 ## Recovery
 
 - The probes restart the phone by themselves (~20 s); `xnu-frankel.img` returns after 120 s. A restart goes **back to Android**: nothing was written.
-- Stuck, black or frozen: hold **Power** 10 to 20 s (or Power + Volume-up) until it restarts. It starts Android (or fastboot: `fastboot reboot`).
+- Stuck, black or frozen: hold **Power** 10 to 20 s until it restarts. It starts Android.
 - Still in fastboot after a `fastboot boot`: the image was refused. `fastboot reboot`. Nothing has changed on the phone.
 - To lock again later: `fastboot flashing lock` (**wipes again**). Not needed for the test.
 - Do not run `fastboot flash`, `erase`, `format` or `oem` anything except what is above.
