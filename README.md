@@ -91,7 +91,8 @@ Each step on a phone whose data is expendable (above). Each says how you know it
    says `frankel`.
 3. **A serial log, if you can:** a USB-C breakout or Google's USB-Cereal, a 1.8 V USB-UART; `fastboot oem uart enable`.
    The shim prints there (`shim: ...`), then the loader and the kernel. Without it, the screen and the RAM log are all.
-4. **First run:** `devices/frankel/mkimage.sh -s 60`, `fastboot boot xnu-frankel.img`.
+4. **First run:** [FIRST-TEST.md](FIRST-TEST.md): two display probes (`mkimage.sh -P 10 [-K]`: the shim alone, a timeline of bands, one frame kicked or not), then
+   `devices/frankel/mkimage.sh -s 120 -K`, `fastboot boot xnu-frankel.img`. `mkimage.sh` runs `audit-image.py` and refuses an image with a write path to storage.
    - The phone stays in fastboot: ABL refused the image. Check the footer (`avbtool info_image`); try the Image
      LZ4-compressed (PixOS's fallback, not built here yet).
    - The phone restarts at once, or the screen does not change: the shim failed before the framebuffer; only the UART
