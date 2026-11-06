@@ -1,0 +1,6 @@
+# HakiOS defconfig for the Google Pixel 10 (frankel) with the system image read from its UFS (devices/frankel, mkimage.sh -U):
+# frankel_defconfig and Google's UFS host, read only (frankel_ufs.config).
+#include common_defconfig
+#include lga.config
+#include frankel.config
+#include frankel_ufs.config
