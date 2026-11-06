@@ -37,8 +37,9 @@ phone's: its configuration, its facts, its image script.
 | `configs/frankel_defconfig` | `#include common_defconfig`, `lga.config`, `frankel.config`: `make frankel_defconfig` |
 | `configs/frankel.config` | the phone's own: every common driver left out (they are Qualcomm's, Samsung's and QEMU's), no firmware, no storage |
 | `configs/frankel_ufs.config`, `frankel_ufs_defconfig` | the same with the kernel's own UFS driver for Google's host, **read only**: `make frankel_ufs_defconfig` |
-| `mkimage.sh` | the boot image for one run (`-U STEP` the UFS route, `-C` eight cores, `-K` the frame kicker) |
-| `audit-image.py` | refuses an image with a write path to storage; `--ufs-ro` allows only the read-only UFS route and checks its command line |
+| `mkimage.sh` | the boot image for one run (`-U STEP` the UFS route, `-F FW` its cold bring-up, `-C` eight cores, `-K` the frame kicker) |
+| `audit-image.py` | refuses an image with a write path to storage; `--ufs-ro` allows only the read-only UFS route and checks its command line, and `ufs_native_cold` against its own copy of that code's lists |
+| `ufs-phy-fw.py` | the UFS M-PHY firmware out of your factory image's `vendor_boot.img`, for `mkimage.sh -F`; never committed |
 
 Changes this port made to the common repository (branch `device/pixel10`): `xnuloader/loader.c` `platform_frankel` (and
 `platform_qemu_lga` for QEMU), found by the device tree's root `compatible` since ABL's framebuffer has no fixed address,
@@ -126,7 +127,7 @@ Drivers, each written from the facts of Google's tree with a "Sources" comment, 
 2. **The watchdogs**, if ABL leaves them running and the shim cannot stop them: pet them from the kernel instead.
 3. **Interrupts beyond the GIC's own**: most peripherals (UFS, the DPU, SPI) report through Google's interrupt
    aggregators ("GIA"), which need a driver before any of them can interrupt.
-4. **UFS** (0x3C400000): `hakios.ufshc.c` has an `lga` entry (read only, initiator id 1, 36-bit DMA, taken as ABL left it; `lga-qemu` is QEMU's
+4. **UFS** (0x3C400000): `hakios.ufshc.c` has an `lga` entry (read only, initiator id 1, 36-bit DMA, taken as ABL left it or, with `ufs_native_cold=1`, brought up from nothing: `hakios.ufshc.lga.h`; `lga-qemu` is QEMU's
    controller with the same quirks, which is what QEMU can run); see `docs/pixel10-bringup.md` in scion-kernel, "Storage". Whether ABL leaves the
    host up is unknown.
    Read-only first, as on the POCO; PixOS's 6a lesson: DMA from the wrong RAM times out behind an IOMMU (here `inf_smmu`,

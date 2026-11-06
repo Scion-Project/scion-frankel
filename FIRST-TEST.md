@@ -19,6 +19,7 @@ and the phone needs an **unlocked boot loader.**
 | `xnu-frankel-ufs-look.img` | the same kernel with its UFS driver **only looking** (step 1): reads Google's host registers (state ABL left it in), writes none, sends nothing; needs nothing on the phone | ~2 min |
 | `xnu-frankel-ufs.img` | the route to SpringBoard: the UFS driver takes the host as ABL left it, **read only**, reads the partition table and mounts `userdata` as the root; **needs the system image in `userdata`** (below) | 10 min |
 | `xnu-frankel-ufs-h8.img` | the same with `ufs_native_h8exit=1`: the link taken out of Hibern8 first (for a phone whose ABL leaves it there); only if the log of the one above says the device did not answer NOP OUT | |
+| `xnu-frankel-ufs-cold.img` | the same with `ufs_native_cold=1`: **the host brought up from nothing**: power domains through the CPM, device reset, reference clock, M-PHY firmware, link startup. Only if the look says the host is down, or `-h8` got no NOP IN. Below: "The cold image" | 10 min |
 
 Run them in this order, stopping when one does not get through. All are boot images (header v4, 64 MiB, AVB footer made with a test key), for
 `fastboot boot` only. **Never `fastboot flash` one.** The UFS images are built by `mkimage.sh -U` after an audit (`audit-image.py --ufs-ro`)
@@ -39,7 +40,10 @@ fastboot boot xnu-frankel.img               # 3. photograph at about 10 s, 30 s,
 fastboot boot xnu-frankel-ufs-look.img      # 4. the same; the log (below) says what the UFS host looks like
 # only if 4's log shows the host up (HCE 1, no "not used"): write the system image (next section), then
 fastboot boot xnu-frankel-ufs.img           # 5. a long run: a minute for the mount, SpringBoard minutes after, if it gets that far
+fastboot boot xnu-frankel-ufs-h8.img        # 6. only if 5 says the device did not answer NOP OUT
+fastboot boot xnu-frankel-ufs-cold.img      # 7. only if 4 says the host is down, or 6 got no NOP IN; "The cold image" first
 ```
+The order is always **look, then h8, then cold**, because each does more to the phone than the one before.
 
 If `fastboot boot` says the image is too large, send `max-download-size`. If the phone **stays in fastboot** after the transfer, ABL refused the image
 (see Recovery); send that and the two getvar lines.
@@ -73,6 +77,33 @@ the system image in `userdata`, the lines of init mounting it. What QEMU cannot 
 assumes it does; PixOS found a Pixel 6a's shut down by ABL and Hibern8), whether DMA from RAM works (an S2MPU stopped PixOS's on the 6a),
 whether the host really takes single-doorbell commands as written, and every timing.
 
+## The cold image
+
+`xnu-frankel-ufs-cold.img` is the first image here that **turns things on**. Read this first.
+
+**What it does to the hardware.** Mails to the CPM (Google's power controller) for three power domains and the PHY's reset; an SMC to EL3 for two clock gates (on only); the reset pad low then high, a hardware reset of the UFS device; the `UFS_PWR_EN` pad high; firmware into the PHY's SRAM (gone at the next power off). It is the sequence Google's kernel runs when it resumes the host, from its source: nothing here has ever run on a phone.
+
+**The rails: no voltage is set.** There is **no PMIC write in this image**, of any rail: not to the UFS's and not to any other. Google's kernel does not set these either: L1S, L24S, S11S and S13S are `google,monitor-only`, left at the PMIC's own values. What this image can do to a rail is what Google's does: drive `UFS_PWR_EN`, which switches VCC and VCCQ on at those values. It never drives it low, so it never cuts the flash's power. `audit-image.py` refuses an image whose code mentions a PMIC, OTP, fuses or the secure world.
+
+**The risk.** Nothing non-volatile is written: no storage, no fuses, no OTP, no PMIC, no secure-world memory, and no signature is bypassed; a restart undoes all of it. What could go wrong: a mail the CPM dislikes, a read of a block that is not powered, or EL3 refusing the call can stop the phone: it then hangs or restarts (Recovery, below). That the CPM or the PMIC cannot be upset into something lasting is a reading of Google's source and not a test: **this is the one image here with a risk that is not zero and not fully known.** Use a phone you can lose.
+
+**What the log says** (`ufs: cold:` lines; each failure ends with `GAVE UP:` and a dump, the host is disabled, the kernel goes on without storage):
+
+| Last line | It means | Send |
+|---|---|---|
+| no `ufs: cold:` line, and the phone restarts or stops at `1` or `3` | a mailbox or a block's read took the core down | the log: this route needs another answer |
+| `GAVE UP: the CPM did not take the mailbox's reset` or `no answer from the CPM` | the CPM does not serve this client now | the dump. No way round it from here |
+| `EL3 refused the clock` | the secure firmware says no; **stop**: nothing here may change that | the a0, a1 line |
+| `3 ... ABL's firmware is in` | the PHY was left running: **the softer path**, no firmware loaded | good news; the rest of the log |
+| `the PHY's SRAM did not say...`, `the M-PHY did not come ready` | power or clock is not what the source says | the dump |
+| `DME_LINKSTARTUP`: `no device`, three times | the PHY runs, the device does not answer: reset, VCC or calibration | the dump, whether `phy-cal-data` was found |
+| `8 link up` | **the host is up from nothing** | the lines after it |
+| then `NOP IN` | DMA works and the device answers | |
+| then `not used: the device does not answer NOP OUT`, `IS` with a bus error | DMA does not reach RAM: `inf_smmu`, or an S2MPU as on the 6a | the host dump |
+| then `ufs: own: userdata LUN 0` | the partition table was read through a host brought up here | |
+
+The link stays in its slow gear (PWM-G1): the partition table and a mount, **not SpringBoard** in 600 s. The firmware comes from your factory image, for the phone's own build if you can, and is never committed: `python3 -I devices/frankel/ufs-phy-fw.py vendor_boot.img ufs-phy-fw.bin`; `~/s9/pixel10-fw/ufs-phy-fw.bin` here is `cp3a.261005.005`'s, the same bytes as Google's public source.
+
 ## Writing the system image to `userdata`: only if you choose to
 
 `xnu-frankel-ufs.img` reads the system image (`userland/system.apfs`, 2.5 GB, made from **your own** IPSW: it never leaves your machine) from
@@ -102,7 +133,7 @@ include them; unverified). Whether the RAM survives the restart is itself one of
 
 ## Recovery
 
-- The probes restart the phone by themselves (~20 s); `xnu-frankel.img` returns after 120 s and the UFS images after 120 s (look) and 600 s. A restart goes **back to Android**: nothing was written.
+- The probes restart the phone by themselves (~20 s); `xnu-frankel.img` returns after 120 s and the UFS images after 120 s (look) and 600 s (`-cold` too, unless it hangs: hold Power). A restart goes **back to Android**: nothing was written.
 - Stuck, black or frozen: hold **Power** 10 to 20 s until it restarts. It starts Android.
 - Still in fastboot after a `fastboot boot`: the image was refused. `fastboot reboot`. Nothing has changed on the phone.
 - To lock again later: `fastboot flashing lock` (**wipes again**). Not needed for the test.
