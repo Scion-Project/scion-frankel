@@ -7,6 +7,14 @@ boot shim, the shim starts `xnuloader`, the loader starts XNU.
 
 **State: written and checked in QEMU, never run on a phone.** `device.conf` is the record: nothing is `works`.
 
+**Two lines, both QEMU only.** The iOS 16.5 kernel (xnu-8796, `frankel_defconfig`) reached SpringBoard in QEMU on 6 November
+2026, on QEMU's UFS device. The iOS 27 kernel is the machine configuration `FRANKEL` of
+[Scion-Project/xnu](https://github.com/Scion-Project/xnu) (`scion/xnu-12377`, since 17 November): one tree with the Galaxy S9's,
+not a fork of it. In QEMU it starts all eight cores and runs iOS 27's `launchd` boot tasks, and stops at `mount-phase-1`
+because the storage driver never writes on this SoC. Its record is scion-kernel's
+[docs/ios27/PIXEL10.md](https://github.com/Scion-Project/scion-kernel/blob/main/docs/ios27/PIXEL10.md). The Pixel 10 route that
+has run on a phone is the other one, the virtual machine in the [Scion app](https://github.com/Scion-Project/scion).
+
 ## Before anything: the phone's data
 
 > **Testing this needs a Pixel 10 with an unlocked boot loader, and unlocking a Pixel's boot loader wipes the phone.**
