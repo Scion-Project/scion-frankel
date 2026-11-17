@@ -1,4 +1,5 @@
 #!/bin/bash
+# SPDX-License-Identifier: MIT-0
 # The Pixel 10's boot image for one run: the Tensor G5's boot shim (socs/lga/shim: no UEFI, it starts the loader itself)
 # and a payload with everything in it -- the loader, the kernel, the small root, the command line -- in an Android boot
 # image of header v4 with an AVB hash footer (test key), for `fastboot boot`: the phone runs it from RAM and nothing is

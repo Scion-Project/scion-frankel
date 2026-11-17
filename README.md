@@ -1,3 +1,4 @@
+<!-- SPDX-License-Identifier: MIT-0 -->
 # Google Pixel 10 (frankel, Tensor G5): HakiOS on the bare metal
 
 HakiOS (Scion's XNU kernel) on the Pixel 10 itself, not as a guest of Android's virtualization (that is Scion's other

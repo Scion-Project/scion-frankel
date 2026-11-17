@@ -1,3 +1,4 @@
+<!-- SPDX-License-Identifier: MIT-0 -->
 # Pixel 10 first test: one page
 
 **Read this before anything.** Nothing here has ever run on a Pixel 10. The images are made to run from RAM and write nothing to the

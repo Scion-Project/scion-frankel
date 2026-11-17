@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: MIT-0
 """
 Refuses an image that could write to the phone's storage. Run by mkimage.sh before it makes one.
 
